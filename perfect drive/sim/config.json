@@ -1,0 +1,25 @@
+{
+    "pyfrc": {
+        "robot": {
+            "w": 2,
+            "h": 3,
+            "starting_x": 2,
+            "starting_y": 20,
+            "starting_angle": 0
+        },
+        "simulation": {
+            "match_time": 120.0, 
+            "time_step": 0.02    
+        },
+        "joysticks": {
+            "0": {
+                "guid": "030000005e040000be02000014010000",
+                "useGamepad": true,
+                "axisConfig": {
+                    "1": {"inverted": false},  
+                    "0": {"inverted": false}  
+                }
+            }
+        }
+    }
+}

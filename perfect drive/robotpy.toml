@@ -1,0 +1,4 @@
+[tool.robotpy]
+# Robot project settings
+team_number = "6016"  # Replace with your team number
+robot_class = "robot.MyRobot"
