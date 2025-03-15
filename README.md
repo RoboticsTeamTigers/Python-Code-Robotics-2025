@@ -30,5 +30,5 @@ ping roborio-TEAM-frc.local
 # Show deployment status
 python -m robotpy deploy-info
 
-Try running the simulator:
+# Try running the simulator
 python -m robotpy sim
