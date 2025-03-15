@@ -38,8 +38,9 @@ TRACKWIDTH = 0.5  # Distance between left and right wheels (meters)
 
 # SECTION 4: Speed Limits
 # These speed limits determine how fast the robot can move
-MAX_SPEED = 0.5         # Reduced max speed for testing
-MAX_ANGULAR_SPEED = 0.25 # Reduced rotation speed
+MAX_SPEED = 0.5         # Increased back for better response
+MAX_ANGULAR_SPEED = 0.3 # Increased for better turning
+RAMP_RATE = 0.1        # Increased for less stuttering
 
 # SECTION 5: PID Control Values
 # These values control how accurately the wheels maintain their direction
@@ -51,17 +52,21 @@ TURNING_MAX_RATE = 0.3  # Max turning speed (rotations per second)
 # SECTION 6: Autonomous Settings
 AUTO_TIME = 1.5  # How long autonomous runs (in seconds)
 
-# SECTION 7: Elevator Settings
+# SECTION 7: Elevator and Climber Settings
 ELEVATOR_KP = 0.5
 ELEVATOR_KI = 0.0
 ELEVATOR_KD = 0.1
 ELEVATOR_MOTOR = 9
-ELEVATOR_UP_SPEED = 0.75     # Slightly reduced for trigger control
-ELEVATOR_DOWN_SPEED = -0.5   # Slightly reduced for trigger control
-ELEVATOR_DEADBAND = 0.1      # Increased deadband for triggers
+CLIMBER_MOTOR = 10
+ELEVATOR_UP_SPEED = 0.9      # 90% speed up
+ELEVATOR_DOWN_SPEED = -0.7   # 70% speed down
+CLIMBER_UP_SPEED = 1.0     # Full speed up
+CLIMBER_DOWN_SPEED = -0.8   # 80% speed down
+ELEVATOR_DEADBAND = 0.05    # Reduced deadband for more responsive control
 ELEVATOR_MAX_HEIGHT = 1.0  # meters
 ELEVATOR_MIN_HEIGHT = 0.0  # meters
 
 # SECTION 8: Drive Control
-ACCELERATION_FACTOR = 0.6  # Controls how aggressive the cube root curve is
-DECELERATION_FACTOR = 0.2  # For smooth stopping
+ACCELERATION_FACTOR = 0.6    # Increased for better response
+DECELERATION_FACTOR = 0.2   # Increased for less stuttering
+INPUT_SMOOTHING = 0.3       # Increased for smoother control

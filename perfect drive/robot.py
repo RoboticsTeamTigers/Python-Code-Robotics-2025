@@ -74,6 +74,16 @@ class MyRobot(wpilib.TimedRobot):
             
             print("Field relative control initialized")
             
+            # Initialize climber motor
+            self.climber_motor = wpilib.PWMSparkMax(constants.CLIMBER_MOTOR)
+            self.climber_motor.setInverted(False)
+            print("Climber motor initialized")
+            
+            # Initialize smoothing variables
+            self.last_forward = 0
+            self.last_strafe = 0
+            self.last_rotation = 0
+            
         except Exception as e:
             print(f"CRITICAL ERROR in robotInit: {e}")
             traceback.print_exc()
@@ -161,37 +171,45 @@ class MyRobot(wpilib.TimedRobot):
         sign = 1 if input >= 0 else -1
         return sign * (abs(input) ** (1/3)) * constants.ACCELERATION_FACTOR
 
+    def smoothInput(self, current, last):
+        """Smooth input using exponential moving average"""
+        return (current * constants.INPUT_SMOOTHING + 
+                last * (1 - constants.INPUT_SMOOTHING))
+
     def teleopPeriodic(self):
-        """
-        This is the main control loop where joystick inputs are converted to robot movement
-        Direction Guide:
-            - Forward/Back: Y-axis of joystick (push forward = robot moves forward)
-            - Left/Right: X-axis of joystick (push right = robot moves right)
-            - Rotation: Z-axis/twist of joystick (twist right = robot turns clockwise)
-        """
         try:
-            # Get joystick inputs with curve
-            forward = self.applyDriveCurve(-self.controller.getRawAxis(1))  # Left Y
-            strafe = self.applyDriveCurve(-self.controller.getRawAxis(0))   # Left X
-            rotation = self.applyDriveCurve(-self.controller.getRawAxis(4)) # Right X
+            # Get raw joystick inputs
+            raw_forward = -self.controller.getRawAxis(1)    # Left Y
+            raw_strafe = -self.controller.getRawAxis(0)     # Left X
+            raw_rotation = -self.controller.getRawAxis(4)  # Right X
 
-            # Apply deadband
-            forward = self.applyDeadband(forward)
-            strafe = self.applyDeadband(strafe)
-            rotation = self.applyDeadband(rotation)
+            # Apply deadband with smaller value
+            forward = self.applyDeadband(raw_forward, 0.02)
+            strafe = self.applyDeadband(raw_strafe, 0.02)
+            rotation = self.applyDeadband(raw_rotation, 0.02)
 
-            # Get field-relative heading from gyro
+            # Apply smoothing first
+            forward = self.smoothInput(forward, self.last_forward)
+            strafe = self.smoothInput(strafe, self.last_strafe)
+            rotation = self.smoothInput(rotation, self.last_rotation)
+
+            # Store for next iteration
+            self.last_forward = forward
+            self.last_strafe = strafe
+            self.last_rotation = rotation
+
+            # Get current heading from gyro
             heading = Rotation2d.fromDegrees(-self.gyro.getAngle())
 
-            # Create field-relative chassis speeds
+            # Create chassis speeds (reduced rotation speed)
             chassis_speeds = ChassisSpeeds.fromFieldRelativeSpeeds(
                 forward * constants.MAX_SPEED,
                 strafe * constants.MAX_SPEED,
-                rotation * constants.MAX_ANGULAR_SPEED,
+                rotation * constants.MAX_ANGULAR_SPEED * 0.7,  # Reduced rotation
                 heading
             )
 
-            # Convert to module states and normalize
+            # Convert to module states
             states = self.kinematics.toSwerveModuleStates(chassis_speeds)
             kinematics.SwerveDrive4Kinematics.normalizeWheelSpeeds(states, constants.MAX_SPEED)
 
@@ -200,29 +218,45 @@ class MyRobot(wpilib.TimedRobot):
                 module.setDesiredState(states[i])
 
             # Elevator Control using triggers
-            right_trigger = self.controller.getRawAxis(3)  # Up
-            left_trigger = self.controller.getRawAxis(2)   # Down
-            
+            right_trigger = self.controller.getRawAxis(3)  # Right Trigger
+            left_trigger = self.controller.getRawAxis(2)   # Left Trigger
+
+            # Calculate elevator power from triggers
             elevator_power = 0
-            if right_trigger > constants.ELEVATOR_DEADBAND:
-                elevator_power = right_trigger * constants.ELEVATOR_UP_SPEED
-            elif left_trigger > constants.ELEVATOR_DEADBAND:
-                elevator_power = -left_trigger * abs(constants.ELEVATOR_DOWN_SPEED)
-            
+            if right_trigger > 0.1:
+                elevator_power = constants.ELEVATOR_UP_SPEED * right_trigger
+                print(f"Elevator UP: {right_trigger}")
+            elif left_trigger > 0.1:
+                elevator_power = constants.ELEVATOR_DOWN_SPEED * left_trigger
+                print(f"Elevator DOWN: {left_trigger}")
+
+            # Climber Control (Y and A buttons)
+            climber_power = 0
+            if self.controller.getRawButton(4):    # Y button for up
+                climber_power = constants.CLIMBER_UP_SPEED
+            elif self.controller.getRawButton(1):  # A button for down
+                climber_power = constants.CLIMBER_DOWN_SPEED
+
+            # Set motors directly
             self.elevator_motor.set(elevator_power)
+            self.climber_motor.set(climber_power)
 
             # Debug output
-            wpilib.SmartDashboard.putNumber("Robot Heading", heading.degrees())
-            wpilib.SmartDashboard.putNumber("Elevator Power", elevator_power)
             wpilib.SmartDashboard.putNumber("Right Trigger", right_trigger)
             wpilib.SmartDashboard.putNumber("Left Trigger", left_trigger)
+            wpilib.SmartDashboard.putNumber("Elevator Power", elevator_power)
+            wpilib.SmartDashboard.putNumber("Climber Power", climber_power)
+            wpilib.SmartDashboard.putBoolean("X Button Pressed", self.controller.getRawButton(3))
+            wpilib.SmartDashboard.putBoolean("B Button Pressed", self.controller.getRawButton(2))
+            wpilib.SmartDashboard.putBoolean("Y Button Pressed", self.controller.getRawButton(4))
+            wpilib.SmartDashboard.putBoolean("A Button Pressed", self.controller.getRawButton(1))
 
         except Exception as e:
             print(f"Error in teleopPeriodic: {e}")
             traceback.print_exc()
             self._emergencyStop()
     
-    def applyDeadband(self, value, deadband: float = 0.05):  # Reduced from 0.1 to 0.05
+    def applyDeadband(self, value, deadband: float = 0.025):  # Reduced from 0.1 to 0.05
         """Apply deadband to joystick inputs"""
         if abs(value) < deadband:
             return 0
