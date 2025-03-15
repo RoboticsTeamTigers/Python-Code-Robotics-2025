@@ -83,6 +83,14 @@ class MyRobot(wpilib.TimedRobot):
             self.last_forward = 0
             self.last_strafe = 0
             self.last_rotation = 0
+
+            # Add robot position tracking
+            self.position = wpilib.Field2d()
+            wpilib.SmartDashboard.putData("Field", self.position)
+            
+            # Reset gyro on startup
+            self.gyro.reset()
+            self.last_heading = Rotation2d()
             
         except Exception as e:
             print(f"CRITICAL ERROR in robotInit: {e}")
@@ -201,12 +209,17 @@ class MyRobot(wpilib.TimedRobot):
             # Get current heading from gyro
             heading = Rotation2d.fromDegrees(-self.gyro.getAngle())
 
+            # Get current heading and calculate delta
+            current_heading = Rotation2d.fromDegrees(-self.gyro.getAngle())
+            heading_delta = current_heading - self.last_heading
+            self.last_heading = current_heading
+
             # Create chassis speeds (reduced rotation speed)
             chassis_speeds = ChassisSpeeds.fromFieldRelativeSpeeds(
                 forward * constants.MAX_SPEED,
                 strafe * constants.MAX_SPEED,
                 rotation * constants.MAX_ANGULAR_SPEED * 0.7,  # Reduced rotation
-                heading
+                current_heading
             )
 
             # Convert to module states
@@ -216,6 +229,21 @@ class MyRobot(wpilib.TimedRobot):
             # Update modules
             for i, module in enumerate(self.modules):
                 module.setDesiredState(states[i])
+
+            # Update robot position on field
+            self.position.setRobotPose(
+                self.position.getRobotPose().exp(
+                    forward * constants.MAX_SPEED,
+                    strafe * constants.MAX_SPEED,
+                    heading_delta.radians()
+                )
+            )
+
+            # Debug position data
+            pose = self.position.getRobotPose()
+            wpilib.SmartDashboard.putNumber("Robot X", pose.X())
+            wpilib.SmartDashboard.putNumber("Robot Y", pose.Y())
+            wpilib.SmartDashboard.putNumber("Robot Heading", current_heading.degrees())
 
             # Elevator Control using triggers
             right_trigger = self.controller.getRawAxis(3)  # Right Trigger

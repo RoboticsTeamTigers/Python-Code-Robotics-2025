@@ -70,3 +70,9 @@ ELEVATOR_MIN_HEIGHT = 0.0  # meters
 ACCELERATION_FACTOR = 0.6    # Increased for better response
 DECELERATION_FACTOR = 0.2   # Increased for less stuttering
 INPUT_SMOOTHING = 0.3       # Increased for smoother control
+
+# SECTION 9: Position Tracking
+FIELD_LENGTH = 16.54  # meters
+FIELD_WIDTH = 8.02   # meters
+POSITION_UPDATE_RATE = 0.02  # seconds
+MAX_ACCELERATION = 2.0  # meters per second squared

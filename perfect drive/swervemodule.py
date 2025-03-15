@@ -87,7 +87,20 @@ class SwerveModule:
             current_angle = self.encoder.get() * 2 * math.pi
             target_angle = state.angle.radians()
             
-            # Rate limit the angle change
+            # Optimize rotation direction
+            angle_diff = math.atan2(math.sin(target_angle - current_angle), 
+                                  math.cos(target_angle - current_angle))
+            
+            # If the difference is more than 90 degrees, flip the direction
+            if abs(angle_diff) > math.pi/2:
+                drive_power = -drive_power
+                target_angle = target_angle + math.pi
+                
+            # Normalize target angle to [-pi, pi]
+            target_angle = math.atan2(math.sin(target_angle), 
+                                    math.cos(target_angle))
+            
+            # Apply rate limiting
             angle_change = target_angle - self.previous_angle
             angle_change = min(max(angle_change, -constants.TURNING_MAX_RATE), 
                              constants.TURNING_MAX_RATE)
@@ -96,7 +109,7 @@ class SwerveModule:
             
             # Calculate turn power using PID
             turn_power = self.turn_pid.calculate(current_angle, target_angle)
-            turn_power = min(max(turn_power, -1), 1)  # Limit power to [-1, 1]
+            turn_power = min(max(turn_power, -1), 1)
             
             # Set motor powers
             self.driveMotor.set(drive_power)
