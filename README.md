@@ -32,3 +32,5 @@ python -m robotpy deploy-info
 
 # Try running the simulator
 python -m robotpy sim
+# MAKE SURE YOU HAVE ROBOT PY REV INSTALLED
+python -m pip install -U robotpy-rev
