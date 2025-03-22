@@ -34,3 +34,14 @@ python -m robotpy deploy-info
 python -m robotpy sim
 # MAKE SURE YOU HAVE ROBOT PY REV INSTALLED
 python -m pip install -U robotpy-rev
+
+# Install python onto robot
+# Install packages locally first
+python -m pip install robotpy[all]==2025.3.1.1
+python -m pip install robotpy-rev==2025.0.2
+python -m pip install phoenix6==25.1.0
+
+# Connect to robot and install packages
+python -m robotpy deploy-info  # Verify robot connection
+python -m robotpy sync         # Download required packages
+python -m robotpy deploy      # Deploy code and dependencies
